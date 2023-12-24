@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nearby Hospitals and Clinics</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <h1>Find Nearby Hospitals and Clinics</h1>
+
+  <div id="map"></div>
+
+  <script>
+    // Function to initialize the map
+    function initMap() {
+      // Create a map centered at a specific location
+      var map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: 37.7749, lng: -122.4194}, // Example: San Francisco coordinates
+        zoom: 13
+      });
+
+      // Use the Geolocation API to get the user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          var userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          // Place a marker at the user's location on the map
+          var userMarker = new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: "Your Location"
+          });
+
+          // Search for nearby hospitals and clinics using Places API
+          var request = {
+            location: userLocation,
+            radius: '500',
+            type: ['hospital', 'clinic']
+          };
+
+          var service = new google.maps.places.PlacesService(map);
+          service.nearbySearch(request, function(results, status) {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+              for (var i = 0; i < results.length; i++) {
+                var place = results[i];
+                createMarker(place);
+              }
+            }
+          });
+        });
+      }
+    }
+
+    // Function to create a marker for each place
+    function createMarker(place) {
+      var marker = new google.maps.Marker({
+        map: map,
+        position: place.geometry.location,
+        title: place.name
+      });
+
+      // Retrieve details for each place, including ratings and doctors
+      var request = {
+        placeId: place.place_id,
+        fields: ['name', 'rating', 'formatted_address', 'formatted_phone_number', 'website']
+      };
+
+      var service = new google.maps.places.PlacesService(map);
+      service.getDetails(request, function(placeDetails, status) {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          // Display details in an info window when the marker is clicked
+          var infoWindow = new google.maps.InfoWindow({
+            content: '<strong>' + placeDetails.name + '</strong><br>' +
+                     'Rating: ' + placeDetails.rating + '<br>' +
+                     'Address: ' + placeDetails.formatted_address + '<br>' +
+                     'Phone: ' + placeDetails.formatted_phone_number + '<br>' +
+                     'Website: <a href="' + placeDetails.website + '">' + placeDetails.website + '</a>'
+          });
+
+          marker.addListener('click', function() {
+            infoWindow.open(map, marker);
+          });
+        }
+      });
+    }
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyByiVU9savzJI2qYluW3v8NnB7tnDJsNfA&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>
